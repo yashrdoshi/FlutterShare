@@ -25,64 +25,61 @@ final followingRef = Firestore.instance.collection('following');
 final timelineRef = Firestore.instance.collection('timeline');
 User currentUser;
 
-
-
 class Home extends StatefulWidget {
   @override
   _HomeState createState() => _HomeState();
 }
 
 class _HomeState extends State<Home> {
-
   bool isAuth = false;
-  PageController pageController; 
+  PageController pageController;
   int pageIndex = 0;
 
   @override
-  void initState() { 
+  void initState() {
     super.initState();
     pageController = PageController();
     //Detects when user signed in
-    googleSignIn.onCurrentUserChanged.listen((account){
+    googleSignIn.onCurrentUserChanged.listen((account) {
       handeSignIn(account);
-    },onError: (err){
+    }, onError: (err) {
       print('Error signing in: $err');
     });
     //Reauthenticate user when app is reopened
-    googleSignIn.signInSilently(suppressErrors: false)
-            .then((account){
-              handeSignIn(account);
-    }).catchError((err){
+    googleSignIn.signInSilently(suppressErrors: false).then((account) {
+      handeSignIn(account);
+    }).catchError((err) {
       print('Error signing in: $err');
     });
   }
 
-  handeSignIn(GoogleSignInAccount account){
-    if(account != null){
-        createUserInFirestore();
-        setState(() {
-          isAuth = true;
-        });
-      }else{
-        setState(() {
-          isAuth = false;
-        });
-      }
+  handeSignIn(GoogleSignInAccount account) {
+    if (account != null) {
+      createUserInFirestore();
+      setState(() {
+        isAuth = true;
+      });
+    } else {
+      setState(() {
+        isAuth = false;
+      });
+    }
   }
 
-  createUserInFirestore()async{
+  createUserInFirestore() async {
     //1. Check if the user exists in users collection acc to their userid
     final GoogleSignInAccount user = googleSignIn.currentUser;
     DocumentSnapshot doc = await usersRef.document(user.id).get();
     print(" Printing User at Line 70 $user");
     print("Printing doc.exists and !doc.exists");
-    print( doc.exists);
+    print(doc.exists);
     print(!doc.exists);
     //2.if the user doesnt exists, then we want to take them to the create acc page
-    if(!doc.exists){
-      final username = await Navigator.push(context, MaterialPageRoute(builder: (context) => CreateAccount()));
-    
-    //3.get the username from create account use it to make new user documents in users collection
+    if (!doc.exists) {
+      final username = await Navigator.push(
+          context, MaterialPageRoute(builder: (context) => CreateAccount()));
+
+      //3.get the username from create account use it to make new user documents in users collection
       usersRef.document(user.id).setData({
         "id": user.id,
         "username": username,
@@ -94,54 +91,48 @@ class _HomeState extends State<Home> {
       });
 
       doc = await usersRef.document(user.id).get();
-     
-      } //end if
-      print("----------------------------------------------------");
-      String photo = user.photoUrl;
-      print("$photo");
+    } //end if
+    print("----------------------------------------------------");
+    String photo = user.photoUrl;
+    print("$photo");
 
+    currentUser = User.fromDocument(doc); // Don't delete
 
-      currentUser = User.fromDocument(doc);   // Don't delete
-      
-      
-      print(currentUser);
-      print(currentUser.username);
-      print("*************");
-      print(currentUser.photoUrl);
-
-
+    print(currentUser);
+    print(currentUser.username);
+    print("*************");
+    print(currentUser.photoUrl);
   }
 
   @override
-  void dispose() { 
+  void dispose() {
     pageController.dispose();
     super.dispose();
   }
 
-  login(){
+  login() {
     googleSignIn.signIn();
   }
 
-  logout(){
+  logout() {
     googleSignIn.signOut();
   }
 
-  onPageChanged(int pageIndex){
-      setState(() {
-        this.pageIndex = pageIndex;
-      });
+  onPageChanged(int pageIndex) {
+    setState(() {
+      this.pageIndex = pageIndex;
+    });
   }
 
-  onTap(int pageIndex){
+  onTap(int pageIndex) {
     pageController.animateToPage(
       pageIndex,
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
   }
- 
 
-  Scaffold buildAuthScreen(){
+  Scaffold buildAuthScreen() {
     return Scaffold(
       body: PageView(
         children: <Widget>[
@@ -162,7 +153,11 @@ class _HomeState extends State<Home> {
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.whatshot)),
           BottomNavigationBarItem(icon: Icon(Icons.notifications_active)),
-          BottomNavigationBarItem(icon: Icon(Icons.photo_camera,size: 40.0,)),
+          BottomNavigationBarItem(
+              icon: Icon(
+            Icons.photo_camera,
+            size: 40.0,
+          )),
           BottomNavigationBarItem(icon: Icon(Icons.search)),
           BottomNavigationBarItem(icon: Icon(Icons.account_circle)),
         ],
@@ -170,26 +165,25 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Scaffold buildUnAuthScreen(){
+  Scaffold buildUnAuthScreen() {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [
+            gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [
               Theme.of(context).accentColor,
               Theme.of(context).primaryColor,
-            ]
-          )
-        ),
+            ])),
         alignment: Alignment.center,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Text("FlutterShare",
-            style : TextStyle(
+            Text(
+              "FlutterShare",
+              style: TextStyle(
                 fontFamily: "Signatra",
                 fontSize: 90.0,
                 color: Colors.white,
@@ -206,7 +200,6 @@ class _HomeState extends State<Home> {
                     fit: BoxFit.cover,
                   ),
                 ),
-
               ),
             ),
           ],
@@ -215,7 +208,6 @@ class _HomeState extends State<Home> {
     );
   }
 
-  
   @override
   Widget build(BuildContext context) {
     return isAuth ? buildAuthScreen() : buildUnAuthScreen();
